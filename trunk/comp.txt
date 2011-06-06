@@ -1,0 +1,1 @@
+g++ -L/usr/X11R6/lib -lGL -lglut -lGLU -lm -L/usr/lib -lSDL -lpthread -I/usr/include/SDL t.cpp -o t
