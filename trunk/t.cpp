@@ -1,6 +1,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include "SDL.h"
+#include <SDL/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -117,7 +117,7 @@ int loadGLTextures() {
 
     }
 
-    if ((textureImage[1] = SDL_LoadBMP("top.bmp"))) {
+    if ((textureImage[1] = SDL_LoadBMP("gfx/top.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[1]);
@@ -131,7 +131,7 @@ int loadGLTextures() {
         
     }
 
-    if ((textureImage[2] = SDL_LoadBMP("right.bmp"))) {
+    if ((textureImage[2] = SDL_LoadBMP("gfx/right.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[2]);
@@ -144,7 +144,7 @@ int loadGLTextures() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     } 
 
-    if ((textureImage[3] = SDL_LoadBMP("left.bmp"))) {
+    if ((textureImage[3] = SDL_LoadBMP("gfx/left.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[3]);
@@ -158,7 +158,7 @@ int loadGLTextures() {
     } 
 
 
-    if ((textureImage[4] = SDL_LoadBMP("front.bmp"))) {
+    if ((textureImage[4] = SDL_LoadBMP("gfx/front.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[4]);
@@ -171,7 +171,7 @@ int loadGLTextures() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     } 
 
-    if ((textureImage[5] = SDL_LoadBMP("back.bmp"))) {
+    if ((textureImage[5] = SDL_LoadBMP("gfx/back.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[5]);
