@@ -1,4 +1,5 @@
-#useful links about SDL
+useful links about SDL
+
 = Introduction =
 
 Some links to read while using SDL
