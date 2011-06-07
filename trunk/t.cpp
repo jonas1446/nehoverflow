@@ -465,7 +465,7 @@ int initGL() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     camera1.atx = camera1.aty = camera1.atz = 0.0f;
-    camera1.tox = camera1.toy = camera1.toz = 0.0f;
+//    camera1.tox = camera1.toy = camera1.toz = 0.0f;
     camera1.xd = camera1.yd = camera1.zd = 0.0f;
     camera1.yaw = camera1.pitch = camera1.upx = camera1.upz = 0.0f;
     camera1.upy = 1.0f;
