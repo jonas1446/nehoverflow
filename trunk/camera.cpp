@@ -7,6 +7,7 @@ Camera::Camera(){
 
     yaw = pitch = roll = 0;
     at = vector3f(0,0,0);
+    to = at + n;
 }
 
 Camera::Camera(vector3f at, vector3f to) {
@@ -36,19 +37,20 @@ void Camera::rotate() {
         
     //rotation in x
     matrix4x4f rx;
-    rx.rotate(pitch, u);
+    rx.rotate(pitch, vector3f(1,0,0));
     rx.transformVector(&n);
     rx.transformVector(&v);
             
     //rotation in y
     matrix4x4f ry;
-    ry.rotate(yaw, v);
+    ry.rotate(yaw, vector3f(0,1,0));
+//    ry.rotate(yaw, v);
     ry.transformVector(&n);
     ry.transformVector(&u);
 
     //rotation in z
     matrix4x4f rz;
-    rz.rotate(roll, n);
+    rz.rotate(roll, vector3f(0,0,1));
     rz.transformVector(&v);
     rz.transformVector(&u);
 
@@ -60,4 +62,5 @@ void Camera::translate(vector3f translation) {
 
 void Camera::moveForward(double speed) {
     at += speed*n;
+    to += speed*n;
 }

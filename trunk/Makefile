@@ -4,9 +4,9 @@ CFLAGS = -Wall
 LIBS = -lGL -lglut -lGLU -lm -lSDL -lpthread
 OBJS = main.o timer.o camera.o matrix4x4f.o vector3f.o
 
-all: cg 
+all: nehoverflow
 
-cg: $(OBJS)
+nehoverflow: $(OBJS)
 	$(CC) $(CFLAGS) $(LIBS) $(OBJS) -o $@
 
 %.o: %.c
