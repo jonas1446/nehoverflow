@@ -27,9 +27,10 @@ typedef struct {
     trianglee *triangle;
 } sector;
 
+//delete this struct -> use Camera class
 typedef struct {
     GLdouble atx, aty, atz;
-    GLdouble upx, upy, upz;
+    GLdouble tox, toy, toz;
     GLfloat xd, yd, zd;
     GLfloat yaw, pitch;
 } camera;
@@ -41,16 +42,19 @@ int light = FALSE;
 int blend = FALSE;
 int ratio;
 
-float speed = 0.1f;
+float speed = 0.01f;
+GLfloat xrot, yrot;
+GLfloat xpos, zpos;
 
-GLfloat lightAmbient[] = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightPosition[] = {0.0f, 0.0f, 0.0f, 1.0f};
-GLfloat lightSpotCutOff[] = {30.0f};
+GLfloat LightAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f};
+GLfloat LightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
+GLfloat LightPosition[] = {0.0f, 0.0f, 2.0f, 1.0f};
+
+const float piover180 = 0.0174532925f;
 
 GLuint filter;
 GLuint texture[6];
-GLuint box2, box1, box05;
+GLuint box;
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -59,11 +63,9 @@ void quit(int returnCode) {
 }
 
 GLvoid buildLists() {
-    box2 = glGenLists(1);
-    box1 = glGenLists(1);
-    box05 = glGenLists(1);
+    box = glGenLists(1);
 
-    glNewList(box2, GL_COMPILE);
+    glNewList(box, GL_COMPILE);
     glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
         glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, -1.0f, -1.0f);
@@ -96,74 +98,6 @@ GLvoid buildLists() {
         glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
     glEnd();
     glEndList();
-
-    glNewList(box1, GL_COMPILE);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
-
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, 0.5f, 0.5f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
-
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, -0.5f);
-
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, -0.5f, -0.5f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, 0.5f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
-
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
-
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
-    glEnd();
-    glEndList();
-
-    glNewList(box05, GL_COMPILE);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.25f, -0.25f, -0.25f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.25f, -0.25f, -0.25f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.25f, -0.25f, 0.25f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.25f, -0.25f, 0.25f);
-
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.25f, -0.25f, 0.25f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.25f, -0.25f, 0.25f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.25f, 0.25f, 0.25f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.25f, 0.25f, 0.25f);
-
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.25f, -0.25f, -0.25f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.25f, 0.25f, -0.25f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.25f, 0.25f, -0.25f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.25f, -0.25f, -0.25f);
-
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.25f, -0.25f, -0.25f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.25f, 0.25f, -0.25f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.25f, 0.25f, 0.25f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.25f, -0.25f, 0.25f);
-
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.25f, -0.25f, -0.25f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.25f, -0.25f, 0.25f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.25f, 0.25f, 0.25f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.25f, 0.25f, -0.25f);
-
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.25f, 0.25f, -0.25f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.25f, 0.25f, 0.25f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.25f, 0.25f, 0.25f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.25f, 0.25f, -0.25f);
-    glEnd();
-    glEndList();
 }
         
 
@@ -172,7 +106,7 @@ int loadGLTextures() {
 
     SDL_Surface *textureImage[6];
 
-    if ((textureImage[0] = SDL_LoadBMP("gfx/grass.bmp"))) {
+    if ((textureImage[0] = SDL_LoadBMP("1.bmp"))) {
         status = TRUE;
         
         glGenTextures(1, &texture[0]);
@@ -380,67 +314,63 @@ int resizeWindow(int w, int h) {
     return TRUE;
 }
 
-void handleKeyPress() {
-    Uint8* keys = SDL_GetKeyState(NULL);
+void handleKeyPress(SDL_keysym *keysym) {
+    switch(keysym->sym) {
+        case SDLK_ESCAPE: quit(0); break;
+        case SDLK_f: filter = (++filter) % 3; break;
 
-    if (keys[SDLK_ESCAPE]) quit(0);
-    if (keys[SDLK_f]) filter = (++filter) % 3;
+        case SDLK_b:
+            blend = !blend;
+            if (blend) { 
+                glEnable(GL_BLEND); 
+                glDisable(GL_DEPTH_TEST);
+            } else {
+                glDisable(GL_BLEND); 
+                glEnable(GL_DEPTH_TEST); 
+            } break;
 
-    if (keys[SDLK_b]) {
-        blend = !blend;
-        if (blend) {
-            glEnable(GL_BLEND);
-            glDisable(GL_DEPTH_TEST);
-        } else {
-            glDisable(GL_BLEND); 
-            glEnable(GL_DEPTH_TEST); 
-        }
+        case SDLK_l: 
+            light = !light;
+            if (!light) glDisable(GL_LIGHTING);
+            else glEnable(GL_LIGHTING); break;
+
+        case SDLK_w: 
+            camera1.atx += camera1.xd * speed;
+            camera1.aty += camera1.yd * speed;
+            camera1.atz += camera1.zd * speed;
+            break;
+
+        case SDLK_s:  
+            camera1.atx -= camera1.xd * speed;
+            camera1.aty -= camera1.yd * speed;
+            camera1.atz -= camera1.zd * speed;
+            break;
+
+        case SDLK_UP:
+            camera1.pitch += 0.001f;
+            camera1.yd = atan(tan(atan(camera1.pitch)));
+            break;
+
+        case SDLK_DOWN:
+            camera1.pitch -= 0.001f;
+            camera1.yd = atan(tan(atan(camera1.pitch)));
+            break;
+
+        case SDLK_RIGHT: 
+            camera1.yaw += 0.001f;
+            camera1.xd = sin(camera1.yaw);
+            camera1.zd = -cos(camera1.yaw); 
+            break;
+
+        case SDLK_LEFT: 
+            camera1.yaw -= 0.001f; 
+            camera1.xd = sin(camera1.yaw);
+            camera1.zd = -cos(camera1.yaw);
+            break;
+
+        case SDLK_F1: SDL_WM_ToggleFullScreen(surface); break;
+        default: break;
     }
-
-    if (keys[SDLK_l]) {
-        light = !light;
-        if (!light) glDisable(GL_LIGHTING);
-        else glEnable(GL_LIGHTING);
-    }
-
-    if (keys[SDLK_w]) {
-        camera1.atx += camera1.xd * speed;
-        camera1.aty += camera1.yd * speed;
-        camera1.atz += camera1.zd * speed;
-    }
-
-    if (keys[SDLK_s]) {
-        camera1.atx -= camera1.xd * speed;
-        camera1.aty -= camera1.yd * speed;
-        camera1.atz -= camera1.zd * speed;
-    }
-
-    if (keys[SDLK_a]) camera1.upz -= 0.01f;
-    if (keys[SDLK_d]) camera1.upz += 0.01f;
-
-    if (keys[SDLK_UP]) {
-        camera1.pitch += 0.01f;
-        camera1.yd = atan(tan(atan(camera1.pitch)));
-    }
-
-    if (keys[SDLK_DOWN]) {
-        camera1.pitch -= 0.01f;
-        camera1.yd = atan(tan(atan(camera1.pitch)));
-    }
-
-    if (keys[SDLK_RIGHT]) {
-        camera1.yaw += 0.01f;
-        camera1.xd = sin(camera1.yaw);
-        camera1.zd = -cos(camera1.yaw); 
-    }
-
-    if (keys[SDLK_LEFT]) {
-        camera1.yaw -= 0.01f; 
-        camera1.xd = sin(camera1.yaw);
-        camera1.zd = -cos(camera1.yaw);
-    }
-
-    if (keys[SDLK_F1]) SDL_WM_ToggleFullScreen(surface);
 }
 
 int initGL() {
@@ -457,18 +387,16 @@ int initGL() {
     glEnable(GL_LIGHTING);
     glEnable(GL_COLOR_MATERIAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
-    glLightfv(GL_LIGHT1, GL_POSITION, lightPosition);
-    glLightfv(GL_LIGHT1, GL_SPOT_CUTOFF, lightSpotCutOff); 
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     camera1.atx = camera1.aty = camera1.atz = 0.0f;
-//    camera1.tox = camera1.toy = camera1.toz = 0.0f;
+    camera1.tox = camera1.toy = camera1.toz = 0.0f;
     camera1.xd = camera1.yd = camera1.zd = 0.0f;
-    camera1.yaw = camera1.pitch = camera1.upx = camera1.upz = 0.0f;
-    camera1.upy = 1.0f;
+    camera1.yaw = camera1.pitch = 0.0f;
 
     return TRUE;
 }
@@ -483,20 +411,49 @@ int drawGLScene() {
     renderSky();
 
     gluLookAt(camera1.atx, camera1.aty, camera1.atz, camera1.atx + camera1.xd,
-            camera1.aty + camera1.yd, camera1.atz + camera1.zd, camera1.upx, camera1.upy, camera1.upz);
+            camera1.aty + camera1.yd, camera1.atz + camera1.zd, 0, 1, 0);
 
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, -10.0f, 0.0f);
 
     for (int i = 0; i < 60; i++) {
         glTranslatef(2.0f, 0.0f, 0.0f);
-        glCallList(box2); 
+        glCallList(box); 
         for (int j = 0; j < 60; j++) {
             glTranslatef(0.0f, 0.0f, 2.0f);
-            glCallList(box2); 
+            glCallList(box); 
         }
         glTranslatef(0.0f, 0.0f, -120.0f);
     }
+    
+    /* for (loop_m = 0; loop_m < sector1.nTriangles; loop_m++) {
+        glBegin(GL_TRIANGLES);
+            glNormal3f(0.0f, 0.0f, 1.0f);
+            x_m = sector1.triangle[loop_m].vertex[0].x;
+            y_m = sector1.triangle[loop_m].vertex[0].y;
+            z_m = sector1.triangle[loop_m].vertex[0].z;
+            u_m = sector1.triangle[loop_m].vertex[0].u;
+            v_m = sector1.triangle[loop_m].vertex[0].v;
+            glTexCoord2f(u_m, v_m);
+            glVertex3f(x_m, y_m, z_m);
+
+            x_m = sector1.triangle[loop_m].vertex[1].x;
+            y_m = sector1.triangle[loop_m].vertex[1].y;
+            z_m = sector1.triangle[loop_m].vertex[1].z;
+            u_m = sector1.triangle[loop_m].vertex[1].u;
+            v_m = sector1.triangle[loop_m].vertex[1].v;
+            glTexCoord2f(u_m, v_m);
+            glVertex3f(x_m, y_m, z_m);
+            
+            x_m = sector1.triangle[loop_m].vertex[2].x;
+            y_m = sector1.triangle[loop_m].vertex[2].y;
+            z_m = sector1.triangle[loop_m].vertex[2].z;
+            u_m = sector1.triangle[loop_m].vertex[2].u;
+            v_m = sector1.triangle[loop_m].vertex[2].v;
+            glTexCoord2f(u_m, v_m);
+            glVertex3f(x_m, y_m, z_m);
+        glEnd();
+    } */
     
     SDL_GL_SwapBuffers();
 
@@ -506,8 +463,7 @@ int drawGLScene() {
         if (t - TO >= 5000) {
             GLfloat seconds = (t-TO)/1000.0;
             GLfloat fps = frames/seconds;
-            printf("%d frames in %g seconds = %g FPS, Yaw: %2.4f, Pitch: %2.4f\n", frames, seconds, fps, camera1.yaw, camera1.pitch); 
-            printf("xd: %2.4f, yd: %2.4f, zd: %2.4f, speed: %2.4f, upz: %2.4f\n", camera1.xd, camera1.yd, camera1.zd, speed, camera1.upz);
+            printf("%d frames in %g seconds = %g FPS, Yaw: %2.4f, Pitch: %2.4f, yd: %2.4f, speed: %2.4f\n", frames, seconds, fps, camera1.yaw, camera1.pitch, camera1.yd, speed);
             TO = t;
             frames = 0;
         }
@@ -573,8 +529,7 @@ int main(int argc, char **argv) {
                 }
                 resizeWindow(event.resize.w, event.resize.h); break;
 
-            case SDL_KEYDOWN: handleKeyPress(); break;
-            case SDL_KEYUP: handleKeyPress(); break;
+            case SDL_KEYDOWN: handleKeyPress(&event.key.keysym); break;
             case SDL_QUIT: done = TRUE; break;
             default: break;
         }
