@@ -358,7 +358,8 @@ int initGL() {
 }
 
 int renderScene(Camera camera) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
     renderSky();
@@ -419,7 +420,7 @@ int main(int argc, char **argv) {
     SDL_Event event;
     const SDL_VideoInfo *videoInfo;
     
-	camera2 = Camera(vector3f(0,0,0), vector3f(0,0,1));
+	camera2 = Camera(vector3f(-1,0,0), vector3f(1,0,0));
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
@@ -437,7 +438,7 @@ int main(int argc, char **argv) {
     videoFlags |= SDL_GL_DOUBLEBUFFER;
     videoFlags |= SDL_HWPALETTE;
     videoFlags |= SDL_RESIZABLE;
-
+	
     if (videoInfo->hw_available) videoFlags |= SDL_HWSURFACE;
     else videoFlags |= SDL_SWSURFACE;
     if (videoInfo->blit_hw) videoFlags |= SDL_HWACCEL;
