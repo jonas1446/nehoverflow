@@ -20,9 +20,7 @@
 
 #define MAXFPS  60
 
-#define RAD_DEG(n) ((n) * (180.0f/ 3.141592654f))
-
-//using namespace std;
+using namespace std;
 
 SDL_Surface *surface;
 Camera camera1, camera2;
@@ -32,6 +30,8 @@ int light = FALSE;
 int blend = FALSE;
 int ratio;
 int frame = 0;
+int w1x = 0;
+int w1y = 0;
 
 float speed = 1;
 
@@ -185,7 +185,6 @@ int loadGLTextures() {
 void renderSky() {
     glPushMatrix();
     glLoadIdentity();
-    gluLookAt(0, 0, 0, camera1.at.x + camera1.to.x, camera1.at.y + camera1.to.y, camera1.at.z + camera1.to.z, 0, 1, 0);
 //	gluLookAt(	camera1.at.x			  , camera1.at.y			  , camera1.at.z, 
 //    			camera1.at.x + camera1.n.x, camera1.at.y + camera1.n.y, camera1.at.z + camera1.n.z, 
 //    			camera1.v.x				  , camera1.v.y				  , camera1.v.z);
@@ -255,7 +254,7 @@ int resizeWindow(int w, int h) {
 
     ratio = (GLfloat)w/(GLfloat)h;
 
-    glViewport(0, 0, (GLint)w, (GLint)h); 
+    glViewport(w1x, w1y, (GLint)w, (GLint)h); 
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -358,18 +357,15 @@ int initGL() {
     return TRUE;
 }
 
-int drawGLScene() {
-    static GLint frames, TO;
-
+int renderScene(Camera camera) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
     renderSky();
 
-    gluLookAt(	camera1.at.x			  , camera1.at.y			  , camera1.at.z, 
-    			camera1.at.x + camera1.n.x, camera1.at.y + camera1.n.y, camera1.at.z + camera1.n.z, 
-    			0,1,0);
-//    			camera1.v.x				  , camera1.v.y				  , camera1.v.z);
+    gluLookAt(	camera.at.x			     , camera.at.y			   , camera.at.z, 
+    			camera.at.x + camera.n.x , camera.at.y + camera.n.y, camera.at.z + camera.n.z, 
+    			camera.v.x               , camera.v.y              , 0);
 
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, -10.0f, 0.0f);
@@ -385,6 +381,15 @@ int drawGLScene() {
     }
     
     SDL_GL_SwapBuffers();
+}
+
+
+int drawGLScene() {
+    static GLint frames, TO;
+    
+    renderScene(camera1);
+
+    renderScene(camera2);
 
     frames++;
     {
@@ -393,10 +398,10 @@ int drawGLScene() {
             GLfloat seconds = (t-TO)/1000.0;
             GLfloat fps = frames/seconds;
             printf("%d frames in %g seconds = %g FPS, Yaw: %2.4f, Pitch: %2.4f, Roll: %2.4f, __time: %2.4f\n", frames, seconds, fps, camera1.yaw, camera1.pitch, camera1.roll, __time.get_ticks()/1000.0f);
-	        std::cout << "Cam pos:< " << camera1.at.x << ", " << camera1.at.y << ", " << camera1.at.z << " >" << std::endl;
-            std::cout << "Cam u:< " << camera1.u.x << ", " << camera1.u.y << ", " << camera1.u.z << " >" << std::endl;
-            std::cout << "Cam v:< " << camera1.v.x << ", " << camera1.v.y << ", " << camera1.v.z << " >" << std::endl;
-			std::cout << "Cam n:< " << camera1.n.x << ", " << camera1.n.y << ", " << camera1.n.z << " >" << std::endl;
+	        cout << "Cam pos:< " << camera1.at.x << ", " << camera1.at.y << ", " << camera1.at.z << " >" << endl;
+            cout << "Cam u:< " << camera1.u.x << ", " << camera1.u.y << ", " << camera1.u.z << " >" << endl;
+            cout << "Cam v:< " << camera1.v.x << ", " << camera1.v.y << ", " << camera1.v.z << " >" << endl;
+			cout << "Cam n:< " << camera1.n.x << ", " << camera1.n.y << ", " << camera1.n.z << " >" << endl;
             TO = t;
             frames = 0;
         }
