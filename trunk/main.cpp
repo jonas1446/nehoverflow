@@ -387,9 +387,11 @@ int renderScene(Camera camera) {
 int drawGLScene() {
     static GLint frames, TO;
     
+    glViewport(0, 0, (GLint)640, (GLint)480);
     renderScene(camera1);
-
-    renderScene(camera2);
+	
+	glViewport(480, 0, (GLint)160, (GLint)120);
+  	renderScene(camera2);
 
     frames++;
     {
@@ -416,6 +418,8 @@ int main(int argc, char **argv) {
     int isActive = TRUE;
     SDL_Event event;
     const SDL_VideoInfo *videoInfo;
+    
+	camera2 = Camera(vector3f(0,0,0), vector3f(0,0,1));
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
