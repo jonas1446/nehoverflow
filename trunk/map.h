@@ -36,6 +36,8 @@ class Map {
     void fillMat(); 
     bool has26Neighbors(int x, int y, int z);
     void optimizeMat();
+    void createNoiseMap();
+
 
 };
 
