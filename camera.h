@@ -10,7 +10,7 @@ class Camera {
 	vector3f u;		//x axis
 	vector3f v;		//y axis
 	vector3f n;		//z axis
-	double yaw;	//rotation in v axis
+	double yaw;	    //rotation in v axis
 	double pitch;	//rotation in u axis
 	double roll;	//rotation in n axis
 
@@ -20,7 +20,7 @@ class Camera {
 	
 	void rotate();
 	void translate(vector3f translation);
-    void moveForward(double speed);
+    void moveForward(double speed, double dt);
 };
 
 #endif
