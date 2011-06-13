@@ -1,9 +1,9 @@
 #ifndef _MAP_H
 #define _MAP_H
 
-#define XX 128 
+#define XX 64 
 #define YY 32
-#define ZZ 128
+#define ZZ 64
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -36,6 +36,8 @@ class Map {
     void fillMat(); 
     bool has26Neighbors(int x, int y, int z);
     void optimizeMat();
+    void createNoiseMap();
+
 
 };
 

@@ -47,7 +47,7 @@ GLfloat LightPosition[] = {0.0f, 0.0f, 2.0f, 1.0f};
 
 GLuint filter;
 GLuint texture[7];
-GLuint box, chunk1, chunk2, chunk3, chunk4;
+GLuint box, chunk, boxla;
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -57,8 +57,8 @@ void quit(int returnCode) {
 
 GLvoid buildLists() {
     box = glGenLists(1);
-    chunk1 = glGenLists(1);
-    chunk2 = glGenLists(1);
+    chunk = glGenLists(1);
+    boxla = glGenLists(1);
 
     glNewList(box, GL_COMPILE);
 
@@ -99,24 +99,45 @@ GLvoid buildLists() {
     glEnd();
     glEndList();
 
-    glNewList(chunk1, GL_COMPILE);
+    glNewList(boxla, GL_COMPILE);
+    glBegin(GL_QUADS);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+        glVertex3f(0.0f, 0.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 10.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 0.0f);
+
+        glVertex3f(10.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 0.0f);
+
+        glVertex3f(0.0f, 10.0f, 0.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
+    glEnd();
+    glEndList();
+
+    glNewList(chunk, GL_COMPILE);
     for (int i = 0; i < CHUNKX; i++) {
         for (int j = 0; j < CHUNKY; j++) {
             for (int k = 0; k < CHUNKZ; k++) {
-                if (sector1.mat[i][j][k] == 1) {
-                    glTranslatef(i+1, j+1, k+1);
-                    glCallList(box);
-                    glTranslatef(-(i+1), -(j+1), -(k+1));
-                }
-            } 
-        }
-    }
-    glEndList();
-
-    glNewList(chunk2, GL_COMPILE);
-    for (int i = CHUNKX; i < 2*CHUNKX; i++) {
-        for (int j = CHUNKY; j < 2*CHUNKY; j++) {
-            for (int k = CHUNKZ; k < 2*CHUNKZ; k++) {
                 if (sector1.mat[i][j][k] == 1) {
                     glTranslatef(i+1, j+1, k+1);
                     glCallList(box);
@@ -446,6 +467,9 @@ void handleKeyPress() {
 int initGL() {
     if (!loadGLTextures()) return FALSE;
     
+    // createNoiseMap();
+
+    // sector1.map_img = "map.bmp";
     sector1.fillMat();
     sector1.optimizeMat();
 
@@ -483,7 +507,7 @@ int renderScene(Camera camera) {
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, -10.0f, 0.0f);
 
-    glCallList(chunk1);
+    glCallList(chunk);
     
     /*glLoadIdentity();
     glTranslatef(32.0f, 32.0f, 32.0f);
