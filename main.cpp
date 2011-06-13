@@ -47,7 +47,7 @@ GLfloat LightPosition[] = {0.0f, 0.0f, 2.0f, 1.0f};
 
 GLuint filter;
 GLuint texture[7];
-GLuint box, chunk;
+GLuint box, chunk, boxla;
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -58,6 +58,7 @@ void quit(int returnCode) {
 GLvoid buildLists() {
     box = glGenLists(1);
     chunk = glGenLists(1);
+    boxla = glGenLists(1);
 
     glNewList(box, GL_COMPILE);
 
@@ -95,6 +96,41 @@ GLvoid buildLists() {
         glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 1.0f, 1.0f);
         glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
         glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, 0.0f);
+    glEnd();
+    glEndList();
+
+    glNewList(boxla, GL_COMPILE);
+    glBegin(GL_QUADS);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+        glVertex3f(0.0f, 0.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 10.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 0.0f, 0.0f);
+
+        glVertex3f(10.0f, 0.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 0.0f, 10.0f);
+
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+        glVertex3f(0.0f, 10.0f, 0.0f);
+
+        glVertex3f(0.0f, 10.0f, 0.0f);
+        glVertex3f(0.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 10.0f);
+        glVertex3f(10.0f, 10.0f, 0.0f);
     glEnd();
     glEndList();
 
@@ -220,6 +256,40 @@ int loadGLTextures() {
     return status;
 }
 
+/*
+void createNoiseMap() {
+    module::Perlin myModule;
+    utils::NoiseMap heightMap;
+    utils::NoiseMapBuilderPlane heightMapBuilder;
+    heightMapBuilder.SetSourceModule(myModule);
+    heightMapBuilder.SetDestNoiseMap(heightMap);
+    heightMapBuilder.SetDestSize(256, 256);
+    heightMapBuilder.SetBounds(2.0, 6.0, 1.0, 5.0);
+    heightMapBuilder.Build();
+
+    utils::RendererImage renderer;
+    utils::Image image;
+    renderer.SetSourceNoiseMap(heightMap);
+    renderer.SetDestImage(image);
+    
+    renderer.ClearGradient();
+    renderer.AddGradientPoint(-1.0000, utils::Color(  0,   0, 128, 255));
+    renderer.AddGradientPoint(-0.2500, utils::Color(  0,   0, 255, 255));
+    renderer.AddGradientPoint( 0.0000, utils::Color(  0, 128, 255, 255));
+    renderer.AddGradientPoint( 0.0625, utils::Color(240, 240,  64, 255));
+    renderer.AddGradientPoint( 0.1250, utils::Color( 32, 160,   0, 255));
+    renderer.AddGradientPoint( 0.3750, utils::Color(224, 224,   0, 255));
+    renderer.AddGradientPoint( 0.7500, utils::Color(128, 255, 128, 255));
+    renderer.AddGradientPoint( 1.0000, utils::Color(255, 255, 255, 255));
+    
+    renderer.Render();
+
+    utils::WriterBMP writer;
+    writer.SetSourceImage(image);
+    writer.SetDestFilename("map.bmp");
+    writer.WriteDestFile();
+}*/
+
 void renderSky() {
     glPushMatrix();
     glLoadIdentity();
@@ -294,13 +364,6 @@ int resizeWindow(int w, int h) {
 
     glViewport(w1x, w1y, (GLint)w, (GLint)h); 
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(90.0f, ratio, 0.1f, 100.0f);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
     return TRUE;
 }
 
@@ -313,6 +376,7 @@ void handleKeyPress() {
     if (keys[SDLK_f]) 
         filter = (++filter) % 3;
 
+    
     if (keys[SDLK_b]) {
         blend = !blend;
         if (blend) { 
@@ -337,7 +401,33 @@ void handleKeyPress() {
     if (keys[SDLK_s]) { 
         camera1.moveForward(-speed, delta.get_ticks());
     }
+
+    if (keys[SDLK_i])
+        camera2.moveForward(speed, delta.get_ticks());
+
+    if (keys[SDLK_k])
+        camera2.moveForward(-speed, delta.get_ticks());
+
+    if (keys[SDLK_j]) {
+        camera2.yaw += 3;
+        camera2.rotate();
+    }
     
+    if (keys[SDLK_l]) {
+        camera2.yaw -= 3;
+        camera2.rotate();
+    }
+
+    if (keys[SDLK_g]) {
+        camera2.pitch -= 3;
+        camera2.rotate();
+    }
+
+    if (keys[SDLK_b]) {
+        camera2.pitch += 3;
+        camera2.rotate();
+    }
+
     if (keys[SDLK_UP]) {
         camera1.pitch -= 3;
         camera1.rotate();
@@ -377,6 +467,9 @@ void handleKeyPress() {
 int initGL() {
     if (!loadGLTextures()) return FALSE;
     
+    // createNoiseMap();
+
+    // sector1.map_img = "map.bmp";
     sector1.fillMat();
     sector1.optimizeMat();
 
@@ -401,7 +494,7 @@ int initGL() {
 }
 
 int renderScene(Camera camera) {
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -415,6 +508,12 @@ int renderScene(Camera camera) {
     glTranslatef(0.0f, -10.0f, 0.0f);
 
     glCallList(chunk);
+    
+    /*glLoadIdentity();
+    glTranslatef(32.0f, 32.0f, 32.0f);
+    glCallList(box);
+
+    glColor3f(1, 1, 1);*/
 
 /*    for (int i = 0; i < 60; i++) {
         glTranslatef(2.0f, 0.0f, 0.0f);
@@ -426,18 +525,30 @@ int renderScene(Camera camera) {
         glTranslatef(0.0f, 0.0f, -120.0f);
     }*/
     
-    SDL_GL_SwapBuffers();
 }
 
 
 int drawGLScene() {
     static GLint frames, TO;
+    glClear(GL_COLOR_BUFFER_BIT);
     
     glViewport(0, 0, (GLint)640, (GLint)480);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0f, (GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT, 0.1f, 500.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
     renderScene(camera1);
-	
-	//glViewport(480, 0, (GLint)160, (GLint)120);
-  	//renderScene(camera2);
+
+    /*
+    glViewport(480, 0, (GLint)160, (GLint)120);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-32, 64, 0, 64, 0.1f, 500.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+  	renderScene(camera2);
+    */
 
     frames++;
     {
@@ -451,6 +562,9 @@ int drawGLScene() {
         }
     }
 
+    glFlush();
+
+    SDL_GL_SwapBuffers();
     return TRUE;
 }
 
@@ -461,7 +575,6 @@ int main(int argc, char **argv) {
     SDL_Event event;
     const SDL_VideoInfo *videoInfo;
     
-	camera2 = Camera(vector3f(-1,0,0), vector3f(1,0,0));
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
