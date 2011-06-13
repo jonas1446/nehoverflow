@@ -10,6 +10,7 @@
 
 #include "timer.h"
 #include "camera.h"
+#include "map.h"
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
@@ -20,11 +21,16 @@
 
 #define MAXFPS  60
 
+#define CHUNKX 64
+#define CHUNKY 32
+#define CHUNKZ 64
+
 using namespace std;
 
 SDL_Surface *surface;
 Camera camera1, camera2;
-Timer __time;
+Timer __time, delta;
+Map sector1(0.0f, 0.0f, "tutorial.bmp");
 
 int light = FALSE;
 int blend = FALSE;
@@ -40,8 +46,8 @@ GLfloat LightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
 GLfloat LightPosition[] = {0.0f, 0.0f, 2.0f, 1.0f};
 
 GLuint filter;
-GLuint texture[6];
-GLuint box;
+GLuint texture[7];
+GLuint box, chunk;
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -51,39 +57,59 @@ void quit(int returnCode) {
 
 GLvoid buildLists() {
     box = glGenLists(1);
+    chunk = glGenLists(1);
 
     glNewList(box, GL_COMPILE);
+
+    glBindTexture(GL_TEXTURE_2D, texture[6]);
     glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, -1.0f, -1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 0.0f, 0.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 0.0f, 1.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, 1.0f);
 
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, 1.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 0.0f, 1.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 1.0f, 1.0f);
 
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 0.0f, 0.0f);
 
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
-
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
-
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 0.0f, 0.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, 0.0f);
         glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 0.0f, 1.0f);
+
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 1.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 1.0f, 1.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 1.0f, 0.0f);
     glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 1.0f, 0.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 1.0f, 1.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, 0.0f);
+    glEnd();
+    glEndList();
+
+    glNewList(chunk, GL_COMPILE);
+    for (int i = 0; i < CHUNKX; i++) {
+        for (int j = 0; j < CHUNKY; j++) {
+            for (int k = 0; k < CHUNKZ; k++) {
+                if (sector1.mat[i][j][k] == 1) {
+                    glTranslatef(i+1, j+1, k+1);
+                    glCallList(box);
+                    glTranslatef(-(i+1), -(j+1), -(k+1));
+                }
+            } 
+        }
+    }
     glEndList();
 }
         
@@ -91,9 +117,9 @@ GLvoid buildLists() {
 int loadGLTextures() {
     int status = FALSE;
 
-    SDL_Surface *textureImage[6];
+    SDL_Surface *textureImage[7];
 
-    if ((textureImage[0] = SDL_LoadBMP("gfx/grass.bmp"))) {
+    if ((textureImage[0] = SDL_LoadBMP("gfx/grasstop.bmp"))) {
         status = TRUE;
         
         glGenTextures(1, &texture[0]);
@@ -172,12 +198,24 @@ int loadGLTextures() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     } 
 
+    if ((textureImage[6] = SDL_LoadBMP("gfx/grassside.bmp"))) {
+        status = TRUE;
+
+        glGenTextures(1, &texture[6]);
+        glBindTexture(GL_TEXTURE_2D, texture[6]);
+        gluBuild2DMipmaps(GL_TEXTURE_2D, 3, textureImage[6]->w, textureImage[6]->h,
+                        GL_BGR, GL_UNSIGNED_BYTE, textureImage[6]->pixels);    
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } 
+
     if (textureImage[0]) SDL_FreeSurface(textureImage[0]);
     if (textureImage[1]) SDL_FreeSurface(textureImage[1]);
     if (textureImage[2]) SDL_FreeSurface(textureImage[2]);
     if (textureImage[3]) SDL_FreeSurface(textureImage[3]);
     if (textureImage[4]) SDL_FreeSurface(textureImage[4]);
     if (textureImage[5]) SDL_FreeSurface(textureImage[5]);
+    if (textureImage[6]) SDL_FreeSurface(textureImage[6]);
 
     return status;
 }
@@ -258,7 +296,7 @@ int resizeWindow(int w, int h) {
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90.0f, ratio, 0.1f, 500.0f);
+    gluPerspective(90.0f, ratio, 0.1f, 100.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -292,29 +330,31 @@ void handleKeyPress() {
         else glEnable(GL_LIGHTING);
     }
     
-    if (keys[SDLK_w]) 
-        camera1.moveForward(speed);
+    if (keys[SDLK_w]) {
+        camera1.moveForward(speed, delta.get_ticks());
+    }
 
-    if (keys[SDLK_s]) 
-        camera1.moveForward(-speed);
+    if (keys[SDLK_s]) { 
+        camera1.moveForward(-speed, delta.get_ticks());
+    }
     
     if (keys[SDLK_UP]) {
-        camera1.pitch += 1;
+        camera1.pitch -= 3;
         camera1.rotate();
     }
 
     if (keys[SDLK_DOWN]) {
-        camera1.pitch -= 1;
+        camera1.pitch += 3;
         camera1.rotate();
     }
 
     if (keys[SDLK_RIGHT]) {
-        camera1.yaw -= 1;
+        camera1.yaw -= 3;
         camera1.rotate();
     }
 
     if (keys[SDLK_LEFT]) {
-        camera1.yaw += 1;
+        camera1.yaw += 3;
         camera1.rotate();
     }
 
@@ -336,6 +376,9 @@ void handleKeyPress() {
 
 int initGL() {
     if (!loadGLTextures()) return FALSE;
+    
+    sector1.fillMat();
+    sector1.optimizeMat();
 
     buildLists();
     glEnable(GL_TEXTURE_2D);
@@ -371,7 +414,9 @@ int renderScene(Camera camera) {
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glTranslatef(0.0f, -10.0f, 0.0f);
 
-    for (int i = 0; i < 60; i++) {
+    glCallList(chunk);
+
+/*    for (int i = 0; i < 60; i++) {
         glTranslatef(2.0f, 0.0f, 0.0f);
         glCallList(box); 
         for (int j = 0; j < 60; j++) {
@@ -379,7 +424,7 @@ int renderScene(Camera camera) {
             glCallList(box); 
         }
         glTranslatef(0.0f, 0.0f, -120.0f);
-    }
+    }*/
     
     SDL_GL_SwapBuffers();
 }
@@ -391,8 +436,8 @@ int drawGLScene() {
     glViewport(0, 0, (GLint)640, (GLint)480);
     renderScene(camera1);
 	
-	glViewport(480, 0, (GLint)160, (GLint)120);
-  	renderScene(camera2);
+	//glViewport(480, 0, (GLint)160, (GLint)120);
+  	//renderScene(camera2);
 
     frames++;
     {
@@ -401,10 +446,6 @@ int drawGLScene() {
             GLfloat seconds = (t-TO)/1000.0;
             GLfloat fps = frames/seconds;
             printf("%d frames in %g seconds = %g FPS, Yaw: %2.4f, Pitch: %2.4f, Roll: %2.4f, __time: %2.4f\n", frames, seconds, fps, camera1.yaw, camera1.pitch, camera1.roll, __time.get_ticks()/1000.0f);
-	        cout << "Cam pos:< " << camera1.at.x << ", " << camera1.at.y << ", " << camera1.at.z << " >" << endl;
-            cout << "Cam u:< " << camera1.u.x << ", " << camera1.u.y << ", " << camera1.u.z << " >" << endl;
-            cout << "Cam v:< " << camera1.v.x << ", " << camera1.v.y << ", " << camera1.v.z << " >" << endl;
-			cout << "Cam n:< " << camera1.n.x << ", " << camera1.n.y << ", " << camera1.n.z << " >" << endl;
             TO = t;
             frames = 0;
         }
@@ -454,8 +495,9 @@ int main(int argc, char **argv) {
     SDL_WM_GrabInput(SDL_GRAB_ON);
 
     initGL();
-    // setupWorld("world.txt");
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    delta.start();
 
     while (!done) {
         __time.start();
@@ -481,7 +523,8 @@ int main(int argc, char **argv) {
 
         frame++;
         if (isActive) drawGLScene();
-        if (__time.get_ticks() < 1000 / MAXFPS) SDL_Delay((1000/MAXFPS) - __time.get_ticks());
+        delta.start();
+        // if (__time.get_ticks() < 1000 / MAXFPS) SDL_Delay((1000/MAXFPS) - __time.get_ticks());
     }
 
     quit(0);

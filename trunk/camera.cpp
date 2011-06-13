@@ -60,7 +60,7 @@ void Camera::translate(vector3f translation) {
     at += translation;
 }
 
-void Camera::moveForward(double speed) {
+void Camera::moveForward(double speed, double dt) {
     at += speed*n;
     to += speed*n;
 }
