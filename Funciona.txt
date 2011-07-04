@@ -1,0 +1,15 @@
+Felipe Gonzalez, Cesar Daudt
+
+O que funciona:
+- Detecção de colisão com o chão.
+- Aceleração, velocidade, gravidade. (Simulação física em geral funciona)
+- Aspectos de jogabilidade.
+- Geração aleatória de mapa.
+
+O que não funciona:
+- Carregamento do modelo de avião e mapa.
+- Detecção de colisão genérica.
+
+Motivos para entrega na próxima semana:
+- Gasto de tempo tentanto gerar mapa aleatóriamente e isso acarretou em alguns problemas.
+- Colisão de entrega com trabalhos de outras disciplinas e provas...

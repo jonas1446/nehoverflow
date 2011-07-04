@@ -7,12 +7,12 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL/SDL.h>
-#include <noise/noise.h>
+//#include <noise/noise.h>
 
 #include "timer.h"
 #include "camera.h"
 #include "map.h"
-#include "noiseutils.h"
+//#include "noiseutils.h"
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
@@ -60,6 +60,7 @@ void quit(int returnCode) {
     exit(returnCode);
 }
 
+/*
 void createNoiseMap(char img[], int width, int height, float xi, float xf, float zi, float zf) {
     module::Perlin myModule;
     utils::NoiseMap heightMap;
@@ -75,7 +76,7 @@ void createNoiseMap(char img[], int width, int height, float xi, float xf, float
     renderer.SetSourceNoiseMap(heightMap);
     renderer.SetDestImage(image);
    
-    /* 
+     
     renderer.ClearGradient();
     renderer.AddGradientPoint(-1.0000, utils::Color(  0,   0, 128, 255));
     renderer.AddGradientPoint(-0.2500, utils::Color(  0,   0, 255, 255));
@@ -85,7 +86,7 @@ void createNoiseMap(char img[], int width, int height, float xi, float xf, float
     renderer.AddGradientPoint( 0.3750, utils::Color(224, 224,   0, 255));
     renderer.AddGradientPoint( 0.7500, utils::Color(128, 255, 128, 255));
     renderer.AddGradientPoint( 1.0000, utils::Color(255, 255, 255, 255));
-    */
+    
     
     renderer.Render();
 
@@ -94,6 +95,7 @@ void createNoiseMap(char img[], int width, int height, float xi, float xf, float
     writer.SetDestFilename(img);
     writer.WriteDestFile();
 }
+*/
 
 GLvoid buildLists() {
     chunk[0] = glGenLists(1);
@@ -167,7 +169,7 @@ GLvoid buildLists() {
     glEndList();
     */
 
-    createNoiseMap("sector1.bmp", 512, 512, 0.0, 5.0, 0.0, 5.0);
+//  createNoiseMap("sector1.bmp", 512, 512, 0.0, 5.0, 0.0, 5.0);
     Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
    
     glNewList(chunk[0], GL_COMPILE);
