@@ -4,7 +4,7 @@
 #include <SDL/SDL.h>
 
 class Timer {
-    private:
+    public:
     int startTicks, pausedTicks;
     bool started, paused; 
 
