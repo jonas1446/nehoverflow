@@ -27,7 +27,7 @@
 #define MAPZS   256
 
 using namespace std;
-using namespace noise;
+//using namespace noise;
 
 SDL_Surface *surface;
 Camera camera1, camera2;
