@@ -5,7 +5,7 @@
 #include <GL/glu.h>
 #include <SDL/SDL.h>
 #include <stdint.h>
-#include "noiseutils.h"
+//#include "noiseutils.h"
 
 class Map {
     public:
