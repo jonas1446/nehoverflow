@@ -14,6 +14,10 @@
 #include "map.h"
 //#include "noiseutils.h"
 
+#include "lib/glm.h"
+#include "lib/imageloader.h"
+#include "lib/Texture.h"
+
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
 #define SCREEN_BPP      16
@@ -27,7 +31,8 @@
 #define MAPZS   256
 
 using namespace std;
-//using namespace noise;
+
+GLMmodel* pmodel1 = NULL;
 
 SDL_Surface *surface;
 Camera camera1, camera2;
@@ -56,6 +61,35 @@ GLuint bottom, top, front, back, lefta, righta;
 GLuint chunk[4];
     
 Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
+
+void drawmodel_box(void) {
+
+    // Load the model only if it hasn't been loaded before
+    // If it's been loaded then pmodel1 should be a pointer to the model geometry data...otherwise it's null
+    if (!pmodel1) {
+        // this is the call that actualy reads the OBJ and creates the model object
+        pmodel1 = glmReadOBJ("untitled.obj");
+        if (!pmodel1) {
+        	exit(0);
+        }
+        // This will rescale the object to fit into the unity matrix
+        // Depending on your project you might want to keep the original size and positions you had in 3DS Max or GMAX so you may have to comment this.
+        glmList(pmodel1, GLM_SMOOTH);
+        glmUnitize(pmodel1);
+        // These 2 functions calculate triangle and vertex normals from the geometry data.
+        // To be honest I had some problem with very complex models that didn't look to good because of how vertex normals were calculated
+        // So if you can export these directly from you modeling tool do it and comment these line
+        // 3DS Max can calculate these for you and GLM is perfectly capable of loading them
+        glmFacetNormals(pmodel1);
+        glmVertexNormals(pmodel1, 90.0);
+
+    }
+    // This is the call that will actually draw the model
+    // Don't forget to tell it if you want textures or not :))
+    glmDraw(pmodel1, GLM_SMOOTH);
+    cout << "desenhou\n";
+
+} 
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -173,12 +207,12 @@ GLvoid buildLists() {
 
 //  createNoiseMap("sector1.bmp", 512, 512, 0.0, 5.0, 0.0, 5.0);
     Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
-   
+   	
     glNewList(chunk[0], GL_COMPILE);
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     int cur_y1, cur_y2, cur_y3, cur_y4;
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 32; j++) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 16; j++) {
             cur_y1 = sector1.getYFromImage(i*16, j*16);
             cur_y2 = sector1.getYFromImage(16+i*16, j*16);
             cur_y3 = sector1.getYFromImage(i*16, 16+j*16);
@@ -540,7 +574,7 @@ void handleKeyPress() {
 int initGL() {
     if (!loadGLTextures()) return FALSE;
     
-    //buildLists();
+    buildLists();
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -573,26 +607,29 @@ int renderScene(Camera camera) {
     
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     int cur_y1, cur_y2, cur_y3, cur_y4;
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 32; j++) {
-            cur_y1 = sector1.getYFromImage(i*16, j*16);
-            cur_y2 = sector1.getYFromImage(16+i*16, j*16);
-            cur_y3 = sector1.getYFromImage(i*16, 16+j*16);
-            cur_y4 = sector1.getYFromImage(16+i*16, 16+j*16);
-            glBegin(GL_TRIANGLES);
-                glTexCoord2f(1.0f, 1.0f); glVertex3f(i*16, cur_y1, j*16);
-                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
-                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
-            glEnd();
+//    for (int i = 0; i < 32; i++) {
+//        for (int j = 0; j < 32; j++) {
+//            cur_y1 = sector1.getYFromImage(i*16, j*16);
+//            cur_y2 = sector1.getYFromImage(16+i*16, j*16);
+//            cur_y3 = sector1.getYFromImage(i*16, 16+j*16);
+//            cur_y4 = sector1.getYFromImage(16+i*16, 16+j*16);
+//            glBegin(GL_TRIANGLES);
+//                glTexCoord2f(1.0f, 1.0f); glVertex3f(i*16, cur_y1, j*16);
+//                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
+//                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
+//            glEnd();
 
-            glBegin(GL_TRIANGLES);
-                glTexCoord2f(1.0f, 1.0f); glVertex3f(16+i*16, cur_y4, 16+j*16);
-                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
-                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
-            glEnd();
+//            glBegin(GL_TRIANGLES);
+//                glTexCoord2f(1.0f, 1.0f); glVertex3f(16+i*16, cur_y4, 16+j*16);
+//                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
+//                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
+//            glEnd();
 
-        }
-    }
+//        }
+//    }
+	glCallList(chunk[0]);
+	drawmodel_box();
+	
 }
 
 
@@ -608,15 +645,13 @@ int drawGLScene() {
     glLoadIdentity();
     renderScene(camera1);
 
-    /*
-    glViewport(480, 0, (GLint)160, (GLint)120);
+    glViewport(480, 400, (GLint)160, (GLint)120);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(-32, 64, 0, 64, 0.1f, 500.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
   	renderScene(camera2);
-    */
 
 
     frames++;
@@ -681,6 +716,7 @@ int main(int argc, char **argv) {
     SDL_WM_GrabInput(SDL_GRAB_ON);
 
     initGL();
+ 
     resizeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     delta.start(); 
