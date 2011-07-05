@@ -54,6 +54,8 @@ GLuint filter;
 GLuint texture[7];
 GLuint bottom, top, front, back, lefta, righta;
 GLuint chunk[4];
+    
+Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
 
 void quit(int returnCode) {
     SDL_Quit();
@@ -538,7 +540,7 @@ void handleKeyPress() {
 int initGL() {
     if (!loadGLTextures()) return FALSE;
     
-    buildLists();
+    //buildLists();
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -569,7 +571,28 @@ int renderScene(Camera camera) {
     			camera.at.x + camera.n.x , camera.at.y + camera.n.y, camera.at.z + camera.n.z, 
     			camera.v.x               , camera.v.y              , 0);
     
-    glCallList(chunk[0]);
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+    int cur_y1, cur_y2, cur_y3, cur_y4;
+    for (int i = 0; i < 32; i++) {
+        for (int j = 0; j < 32; j++) {
+            cur_y1 = sector1.getYFromImage(i*16, j*16);
+            cur_y2 = sector1.getYFromImage(16+i*16, j*16);
+            cur_y3 = sector1.getYFromImage(i*16, 16+j*16);
+            cur_y4 = sector1.getYFromImage(16+i*16, 16+j*16);
+            glBegin(GL_TRIANGLES);
+                glTexCoord2f(1.0f, 1.0f); glVertex3f(i*16, cur_y1, j*16);
+                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
+                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
+            glEnd();
+
+            glBegin(GL_TRIANGLES);
+                glTexCoord2f(1.0f, 1.0f); glVertex3f(16+i*16, cur_y4, 16+j*16);
+                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
+                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
+            glEnd();
+
+        }
+    }
 }
 
 
