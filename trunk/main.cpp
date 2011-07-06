@@ -70,7 +70,7 @@ bool LoadTreeTextures() {
     // first of all we call the tga file loader. It doesn't do anything special: it fills the Texture struct with information about
     // the image (height, width, bits per pixel). You can easily replace it with a function to load bmps or jpegs.
     // The important thing is do load the image corectly in the structure you give it
-    if (LoadTGA(&treeTexture, "airplane_01_body1.tga.tga"))
+    if (LoadTGA(&treeTexture, "airplane_01_body1.tga"))
     {
 
         // This tells opengl to create 1 texture and put it's ID in the given integer variable
