@@ -62,19 +62,60 @@ GLuint chunk[4];
     
 Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
 
+//GLuint plane_texture;
+Texture treeTexture;
+
+bool LoadTreeTextures() {
+
+    // first of all we call the tga file loader. It doesn't do anything special: it fills the Texture struct with information about
+    // the image (height, width, bits per pixel). You can easily replace it with a function to load bmps or jpegs.
+    // The important thing is do load the image corectly in the structure you give it
+    if (LoadTGA(&treeTexture, "airplane_01_body1.tga.tga"))
+    {
+
+        // This tells opengl to create 1 texture and put it's ID in the given integer variable
+        // OpenGL keeps a track of loaded textures by numbering them: the first one you load is 1, second is 2, ...and so on.
+        glGenTextures(1, &treeTexture.texID);
+        // Binding the texture to GL_TEXTURE_2D is like telling OpenGL that the texture with this ID is now the current 2D texture in use
+        // If you draw anything the used texture will be the last binded texture
+        glBindTexture(GL_TEXTURE_2D, treeTexture.texID);
+        // This call will actualy load the image data into OpenGL and your video card's memory. The texture is allways loaded into the current texture
+        // you have selected with the last glBindTexture call
+        // It asks for the width, height, type of image (determins the format of the data you are giveing to it) and the pointer to the actual data
+        glTexImage2D(GL_TEXTURE_2D, 0, treeTexture.bpp / 8, treeTexture.width, treeTexture.height, 0, treeTexture.type, GL_UNSIGNED_BYTE, treeTexture.imageData);
+
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glEnable(GL_TEXTURE_2D);
+        if (treeTexture.imageData)
+        {
+
+            // You can now free the image data that was allocated by LoadTGA
+            // You don't want to keep a few Mb of worthless data on heap. It's worthless because OpenGL stores the image someware else after
+            // you call glTexImage2D (usualy in you video card)
+            free(treeTexture.imageData); 
+
+        }
+
+        return true;
+
+    } // Return The Status
+    else return false;
+
+}
+
 void drawmodel_box(void) {
 
     // Load the model only if it hasn't been loaded before
     // If it's been loaded then pmodel1 should be a pointer to the model geometry data...otherwise it's null
     if (!pmodel1) {
         // this is the call that actualy reads the OBJ and creates the model object
-        pmodel1 = glmReadOBJ("untitled.obj");
+        pmodel1 = glmReadOBJ("airplane.obj");
         if (!pmodel1) {
         	exit(0);
         }
         // This will rescale the object to fit into the unity matrix
         // Depending on your project you might want to keep the original size and positions you had in 3DS Max or GMAX so you may have to comment this.
-        glmList(pmodel1, GLM_SMOOTH);
         glmUnitize(pmodel1);
         // These 2 functions calculate triangle and vertex normals from the geometry data.
         // To be honest I had some problem with very complex models that didn't look to good because of how vertex normals were calculated
@@ -86,8 +127,12 @@ void drawmodel_box(void) {
     }
     // This is the call that will actually draw the model
     // Don't forget to tell it if you want textures or not :))
-    glmDraw(pmodel1, GLM_SMOOTH);
-    cout << "desenhou\n";
+	glTranslatef(20, 10, 20);
+ 	glScalef(25,25,25);
+ 	// before you draw anything you should bind the right texture
+	// If you have more then one texture you will have to make sure you bind the right one
+	glBindTexture(GL_TEXTURE_2D, treeTexture.texID);
+    glmDraw(pmodel1, GLM_SMOOTH| GLM_TEXTURE);
 
 } 
 
@@ -590,6 +635,10 @@ int initGL() {
     glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    if(!LoadTreeTextures()) {
+    	cout<<"texture success\n";
+    }
 
     return TRUE;
 }
