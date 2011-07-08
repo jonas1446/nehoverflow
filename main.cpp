@@ -35,7 +35,7 @@ using namespace std;
 GLMmodel* pmodel1 = NULL;
 
 SDL_Surface *surface;
-Camera camera1, camera2;
+Camera camera1, camera2, plane_camera1, plane_camera2, plane_camera3;
 Timer __time, delta;
 
 int light = FALSE;
@@ -104,7 +104,7 @@ bool LoadTreeTextures() {
 
 }
 
-void drawmodel_box(void) {
+void drawmodel_box(float yaw, float pitch, float x, float y, float z) {
 
     // Load the model only if it hasn't been loaded before
     // If it's been loaded then pmodel1 should be a pointer to the model geometry data...otherwise it's null
@@ -127,12 +127,15 @@ void drawmodel_box(void) {
     }
     // This is the call that will actually draw the model
     // Don't forget to tell it if you want textures or not :))
-	glTranslatef(20, 10, 20);
- 	glScalef(25,25,25);
+	glTranslatef(x, y, z);
+    glRotatef(yaw, 0, 1, 0);
+ 	glScalef(2,2,2);
  	// before you draw anything you should bind the right texture
 	// If you have more then one texture you will have to make sure you bind the right one
 	glBindTexture(GL_TEXTURE_2D, treeTexture.texID);
     glmDraw(pmodel1, GLM_SMOOTH| GLM_TEXTURE);
+    glTranslatef(-x, -y, -z);
+    glRotatef(-yaw, 0, 1, 0);
 
 } 
 
@@ -655,30 +658,14 @@ int renderScene(Camera camera) {
     			camera.v.x               , camera.v.y              , 0);
     
     glBindTexture(GL_TEXTURE_2D, texture[0]);
-    int cur_y1, cur_y2, cur_y3, cur_y4;
-//    for (int i = 0; i < 32; i++) {
-//        for (int j = 0; j < 32; j++) {
-//            cur_y1 = sector1.getYFromImage(i*16, j*16);
-//            cur_y2 = sector1.getYFromImage(16+i*16, j*16);
-//            cur_y3 = sector1.getYFromImage(i*16, 16+j*16);
-//            cur_y4 = sector1.getYFromImage(16+i*16, 16+j*16);
-//            glBegin(GL_TRIANGLES);
-//                glTexCoord2f(1.0f, 1.0f); glVertex3f(i*16, cur_y1, j*16);
-//                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
-//                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
-//            glEnd();
+    glBegin(GL_QUADS);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 1000.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(1000.0f, 0.0f, 1000.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(1000.0f, 0.0f, 0.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+    glEnd();
 
-//            glBegin(GL_TRIANGLES);
-//                glTexCoord2f(1.0f, 1.0f); glVertex3f(16+i*16, cur_y4, 16+j*16);
-//                glTexCoord2f(1.0f, 0.0f); glVertex3f(16+i*16, cur_y2, j*16);
-//                glTexCoord2f(0.0f, 0.0f); glVertex3f(i*16, cur_y3, 16+j*16);
-//            glEnd();
-
-//        }
-//    }
-	glCallList(chunk[0]);
-	drawmodel_box();
-	
+	drawmodel_box(camera.yaw, camera.pitch, camera.at.x+3, camera.at.y-0, camera.at.z+3);
 }
 
 

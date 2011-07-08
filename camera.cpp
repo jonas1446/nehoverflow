@@ -64,9 +64,11 @@ void Camera::moveForward(double speed, double dt) {
     // euler method and motion equations (s = si + vi*dt + a(dt)^2/2) for 
     // physics simulation (velocity, acceleration, gravity,...)
     at.x += speed*n.x*dt;
-    at.y += speed*n.y*dt - 0.000983*dt*dt/2;
+    at.y += speed*n.y*dt;
+        //- 0.000983*dt*dt/2;
     at.z += speed*n.z*dt;
     to.x += speed*n.x*dt;
-    to.y += speed*n.y*dt - 0.000983*dt*dt/2;
+    to.y += speed*n.y*dt; 
+        //- 0.000983*dt*dt/2;
     to.z += speed*n.z*dt;
 }
