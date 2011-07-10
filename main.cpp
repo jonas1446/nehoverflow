@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <cmath>
+#include <time.h>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -27,16 +28,17 @@
 
 #define MAXFPS  60
 
-#define MAPXS   256 
-#define MAPZS   256
-
+#define NPYR    200
 using namespace std;
 
 GLMmodel* pmodel1 = NULL;
 
 SDL_Surface *surface;
-Camera camera1, camera2, plane_camera1, plane_camera2, plane_camera3;
+Camera camera1, camera2, plane_camera1, plane_camera2, plane_camera3, plane_camera4;
 Timer __time, delta;
+
+float planeix = 0;
+float planeiz = 3;
 
 int light = FALSE;
 int blend = FALSE;
@@ -44,7 +46,10 @@ int ratio;
 int frame = 0;
 int w1x = 0;
 int w1y = 0;
+int tmodifier = 1;
+int boost = 1;
 float npoffset = 5.0;
+int n_camera = 0;
 
 float speed = 0.0f;
 float acel = 0.0001f;
@@ -59,11 +64,61 @@ GLuint filter;
 GLuint texture[7];
 GLuint bottom, top, front, back, lefta, righta;
 GLuint chunk[4];
+
+GLfloat fogColor[4] = {0.8f, 0.8f, 0.3f, 0.2f};
     
 Map sector1(0.0, 5.0, 0.0, 5.0, "sector1.bmp");
 
+typedef struct PYR {
+    float x, y, z; // pyramids x,y,z -> y being the center, not top
+    float height, width;
+} pyramid;
+
+pyramid pyramids[NPYR];
+int lpl = 0;
 //GLuint plane_texture;
 Texture treeTexture;
+
+// if number x is close to number y
+bool nearr(int nx, int ny) {
+    if (15 < abs(nx-ny)) return false;
+    else return true;
+}
+
+bool verifyrand(int rx, int rz) {
+    for (int i = 0; i < lpl; i++) {
+        if (nearr(pyramids[i].x, rx)) { 
+            if (nearr(pyramids[i].z, rz)) return false;
+        }
+
+        if (nearr(pyramids[i].z, rz)) {
+            if (nearr(pyramids[i].x, rx)) return false;
+        }
+    }
+    return true;
+}
+
+void createPyramid() {
+    srand(time(NULL));
+
+    lpl++;
+
+    int randx = rand() % 2900 + 20;
+    int randy = rand() % 40 + 10;
+    int randz = rand() % 2900 + 20;
+    while (!verifyrand(randx, randz)) { randx = rand() % 2900 + 20; randz = rand() % 2900 + 20; }
+
+    pyramids[lpl-1].x = randx; 
+    pyramids[lpl-1].y = randy;
+    pyramids[lpl-1].z = randz;
+    pyramids[lpl-1].height = 2*randy;
+    pyramids[lpl-1].width = 2*2*randy*0.4;
+}
+
+void createPyramids() {
+    int i;
+    for (i = 0; i < NPYR; i++) { createPyramid(); printf("%d, ", pyramids[i].x); } 
+}
 
 bool LoadTreeTextures() {
 
@@ -104,7 +159,7 @@ bool LoadTreeTextures() {
 
 }
 
-void drawmodel_box(float yaw, float pitch, float x, float y, float z) {
+void drawmodel_box(float x, float y, float z) {
 
     // Load the model only if it hasn't been loaded before
     // If it's been loaded then pmodel1 should be a pointer to the model geometry data...otherwise it's null
@@ -127,16 +182,11 @@ void drawmodel_box(float yaw, float pitch, float x, float y, float z) {
     }
     // This is the call that will actually draw the model
     // Don't forget to tell it if you want textures or not :))
-	glTranslatef(x, y, z);
-    glRotatef(yaw, 0, 1, 0);
  	glScalef(2,2,2);
  	// before you draw anything you should bind the right texture
 	// If you have more then one texture you will have to make sure you bind the right one
 	glBindTexture(GL_TEXTURE_2D, treeTexture.texID);
     glmDraw(pmodel1, GLM_SMOOTH| GLM_TEXTURE);
-    glTranslatef(-x, -y, -z);
-    glRotatef(-yaw, 0, 1, 0);
-
 } 
 
 void quit(int returnCode) {
@@ -346,7 +396,7 @@ int loadGLTextures() {
 
     SDL_Surface *textureImage[7];
 
-    if ((textureImage[0] = SDL_LoadBMP("gfx/grasstop.bmp"))) {
+    if ((textureImage[0] = SDL_LoadBMP("gfx/sand3.bmp"))) {
         status = TRUE;
         
         glGenTextures(1, &texture[0]);
@@ -425,7 +475,7 @@ int loadGLTextures() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     } 
 
-    if ((textureImage[6] = SDL_LoadBMP("gfx/grassside.bmp"))) {
+    if ((textureImage[6] = SDL_LoadBMP("gfx/pyramid.bmp"))) {
         status = TRUE;
 
         glGenTextures(1, &texture[6]);
@@ -547,13 +597,21 @@ void handleKeyPress() {
         if (!light) glDisable(GL_LIGHTING);
         else glEnable(GL_LIGHTING);
     }
+
+    if (keys[SDLK_LSHIFT]) {
+        tmodifier = 3;
+    }
+
+    if (keys[SDLK_LCTRL]) {
+        boost = 10;
+    }
     
     if (keys[SDLK_w]) {
-        if (speed <= 0.1f) speed += acel;
+        if (speed <= 0.3f) speed += boost*acel;
     }
 
     if (keys[SDLK_s]) { 
-        if (speed > 0) speed -= acel;
+        if (speed > 0) speed -= boost*acel;
     }
 
     if (keys[SDLK_i])
@@ -583,22 +641,22 @@ void handleKeyPress() {
     }
 
     if (keys[SDLK_UP]) {
-        camera1.pitch -= 0.3f;
+        camera1.pitch -= 0.3f*tmodifier;
         camera1.rotate();
     }
 
     if (keys[SDLK_DOWN]) {
-        camera1.pitch += 0.3f;
+        camera1.pitch += 0.3f*tmodifier;
         camera1.rotate();
     }
 
     if (keys[SDLK_RIGHT]) {
-        camera1.yaw -= 0.3f;
+        camera1.yaw -= 0.3f*tmodifier;
         camera1.rotate();
     }
 
     if (keys[SDLK_LEFT]) {
-        camera1.yaw += 0.3f;
+        camera1.yaw += 0.3f*tmodifier;
         camera1.rotate();
     }
 
@@ -612,16 +670,36 @@ void handleKeyPress() {
         camera1.rotate();
     }
 
+    if (keys[SDLK_n]) {
+        camera1.at.x = 5.0f;
+        camera1.at.y = 0.5f;
+        camera1.at.z = 5.0f;
+        camera1.n.x = 0.0f;
+        camera1.n.y = 0.0f;
+        camera1.n.z = 1.0f;
+        camera1.to = camera1.at + camera1.n;
+        speed = 0.0f;
+        acel = 0.0001f;
+    }
+    
+    if (keys[SDLK_0]) n_camera = 0;
+    if (keys[SDLK_1]) n_camera = 1;
+    if (keys[SDLK_2]) n_camera = 2;
+    if (keys[SDLK_3]) n_camera = 3;
+    if (keys[SDLK_4]) n_camera = 4;
+
+
     if (keys[SDLK_F1])
         SDL_WM_ToggleFullScreen(surface); 
 
-
+    tmodifier = 1;
+    boost = 1;
 }
 
 
 int initGL() {
     if (!loadGLTextures()) return FALSE;
-    
+     
     buildLists();
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
@@ -638,6 +716,13 @@ int initGL() {
     glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
     glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glFogi(GL_FOG_MODE, GL_LINEAR);
+    glFogfv(GL_FOG_COLOR, fogColor);
+    glFogf(GL_FOG_DENSITY, 0.35f);
+    glFogf(GL_FOG_START, 0.5f);
+    glFogf(GL_FOG_END, 10.0f);
+    //glEnable(GL_FOG);
+    createPyramids();
     
     if(!LoadTreeTextures()) {
     	cout<<"texture success\n";
@@ -646,26 +731,129 @@ int initGL() {
     return TRUE;
 }
 
-int renderScene(Camera camera) {
+void drawPyramids() {
+    int i;
+    glBindTexture(GL_TEXTURE_2D, texture[6]);
+    for (i = 0; i < NPYR; i++) {
+        int x = pyramids[i].x;
+        int y = pyramids[i].y;
+        int z = pyramids[i].z;
+        float width = pyramids[i].width;
+        float height = pyramids[i].height;
+        
+        glBegin(GL_TRIANGLES);
+            // front face
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z); 
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x - width/2, 0, z - width/2); 
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + width/2, 0, z - width/2); 
+
+            // right face
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z); 
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + width/2, 0, z - width/2); 
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width/2, 0, z + width/2); 
+
+            // back face
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z); 
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x - width/2, 0, z + width/2); 
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width/2, 0, z + width/2); 
+
+            // left face
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z); 
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x - width/2, 0, z - width/2); 
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x - width/2, 0, z + width/2); 
+        glEnd();
+    }
+}
+
+void explosion(float x, float y, float z, double time) {
+
+}
+
+int renderScene(Camera camera, bool v) {
 //  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
     renderSky();
 
-    gluLookAt(	camera.at.x			     , camera.at.y			   , camera.at.z, 
-    			camera.at.x + camera.n.x , camera.at.y + camera.n.y, camera.at.z + camera.n.z, 
-    			camera.v.x               , camera.v.y              , 0);
-    
+    if (v == true) {
+        gluLookAt(	camera.at.x			     , camera.at.y			   , camera.at.z, 
+                    camera.at.x + camera.n.x , camera.at.y + camera.n.y, camera.at.z + camera.n.z, 
+                    camera.v.x               , camera.v.y              , 0);
+    } else {
+        gluLookAt(camera.at.x, camera.at.y, camera.at.z,
+                  camera.to.x, camera.to.y, camera.to.z,
+                  camera.v.x, camera.v.y, 0);
+    }
+        
     glBindTexture(GL_TEXTURE_2D, texture[0]);
     glBegin(GL_QUADS);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 1000.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(1000.0f, 0.0f, 1000.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(1000.0f, 0.0f, 0.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 0.0f, 0.0f);
-    glEnd();
+        //bottom left
+        glTexCoord2d(0, 0); glVertex3f(0.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 0); glVertex3f(1000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 1); glVertex3f(1000.0f, 0.0f, 0.0f);
+        glTexCoord2d(0, 1); glVertex3f(0.0f, 0.0f, 0.0f);
 
-	drawmodel_box(camera.yaw, camera.pitch, camera.at.x+3, camera.at.y-0, camera.at.z+3);
+        //bottom mid
+        glTexCoord2d(0, 0); glVertex3f(1000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 0); glVertex3f(2000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 1); glVertex3f(2000.0f, 0.0f, 0.0f);
+        glTexCoord2d(0, 1); glVertex3f(1000.0f, 0.0f, 0.0f);
+
+        //bottom right
+        glTexCoord2d(0, 0); glVertex3f(2000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 0); glVertex3f(3000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(1, 1); glVertex3f(3000.0f, 0.0f, 0.0f);
+        glTexCoord2d(0, 1); glVertex3f(2000.0f, 0.0f, 0.0f);
+
+        //mid left
+        glTexCoord2d(0, 0); glVertex3f(0.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 0); glVertex3f(1000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 1); glVertex3f(1000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(0, 1); glVertex3f(0.0f, 0.0f, 1000.0f);
+
+        //mid mid
+        glTexCoord2d(0, 0); glVertex3f(1000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 0); glVertex3f(2000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 1); glVertex3f(2000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(0, 1); glVertex3f(1000.0f, 0.0f, 1000.0f);
+
+        //mid right
+        glTexCoord2d(0, 0); glVertex3f(2000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 0); glVertex3f(3000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(1, 1); glVertex3f(3000.0f, 0.0f, 1000.0f);
+        glTexCoord2d(0, 1); glVertex3f(2000.0f, 0.0f, 1000.0f);
+
+        //top left
+        glTexCoord2d(0, 0); glVertex3f(0.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 0); glVertex3f(1000.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 1); glVertex3f(1000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(0, 1); glVertex3f(0.0f, 0.0f, 2000.0f);
+
+        //top mid
+        glTexCoord2d(0, 0); glVertex3f(1000.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 0); glVertex3f(2000.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 1); glVertex3f(2000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(0, 1); glVertex3f(1000.0f, 0.0f, 2000.0f);
+
+        //top right
+        glTexCoord2d(0, 0); glVertex3f(2000.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 0); glVertex3f(3000.0f, 0.0f, 3000.0f);
+        glTexCoord2d(1, 1); glVertex3f(3000.0f, 0.0f, 2000.0f);
+        glTexCoord2d(0, 1); glVertex3f(2000.0f, 0.0f, 2000.0f);
+    glEnd();
+    
+    drawPyramids();
+
+    glTranslatef(camera1.at.x, camera1.at.y, camera1.at.z);
+    glRotatef(camera1.yaw, 0, 1, 0);
+    glRotatef(camera1.pitch, 1, 0, 0);
+    glRotatef(camera1.roll, 0, 0, 1);
+    drawmodel_box(camera1.at.x, camera1.at.y, camera1.at.z);
+    glRotatef(-camera1.roll, 0, 0, 1);
+    glRotatef(-camera1.pitch, 1, 0, 0);
+    glRotatef(-camera1.yaw, 0, 1, 0);
+    glTranslatef(-camera1.at.x, -camera1.at.y, -camera1.at.z);
 }
 
 
@@ -676,19 +864,23 @@ int drawGLScene() {
     glViewport(0, 0, (GLint)640, (GLint)480);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT, 0.1f, 500.0f);
+    gluPerspective(45.0f, (GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT, 0.1f, 2000.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    renderScene(camera1);
+    renderScene(camera1, true);
 
-    glViewport(480, 400, (GLint)160, (GLint)120);
+    glViewport(400, 320, (GLint)240, (GLint)200);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-32, 64, 0, 64, 0.1f, 500.0f);
+    gluPerspective(45.0f, (GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT, 0.1f, 2000.0f);
+    //glOrtho(-50, 50, 0, 100, 0, 100);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-  	renderScene(camera2);
-
+    if (n_camera == 0) renderScene(camera2, false);
+    if (n_camera == 1) renderScene(plane_camera1, false);
+    if (n_camera == 2) renderScene(plane_camera2, false);
+    if (n_camera == 3) renderScene(plane_camera3, false);
+    if (n_camera == 4) renderScene(plane_camera4, false);
 
     frames++;
     {
@@ -708,8 +900,36 @@ int drawGLScene() {
     return TRUE;
 }
 
-void explosion(float x, float y, float z, double time) {
+bool insidePyramid(int cx, int cz, float widthl, int x, int z) {
+    if (((cx >= x-widthl) && (cz >= z-widthl)) &&
+        ((cx <= x+widthl) && (cz >= z-widthl)) &&
+        ((cx <= x+widthl) && (cz <= z+widthl)) &&
+        ((cx >= x-widthl) && (cz <= z+widthl))) return true;
+    else return false;
+} 
 
+void detectCollision() {
+    // if the plane is too slow simply dont let it go through the floor
+    // else it will EXPLODE!!!11!1!11one
+    if (camera1.at.y < 0.5f) {
+        camera1.at.y = 0.5f;
+        camera1.to.y = 0.5f;
+    }
+
+    // if the plane hits a pyramid it just stops, the player can press n to restart at a new position 
+    int i;
+    for (int i = 0; i < NPYR; i++) {
+        int x = pyramids[i].x;
+        int y = pyramids[i].y;
+        int z = pyramids[i].z;
+        if (camera1.at.y < y) {
+            float widthl = abs(pyramids[i].width/2-0.8*camera1.at.y);
+            if (insidePyramid(camera1.at.x, camera1.at.z, widthl, x, z)) {
+                speed = 0.0f;
+                acel = 0.0f;
+            }
+        }
+    }
 }
 
 int main(int argc, char **argv) {
@@ -780,19 +1000,43 @@ int main(int argc, char **argv) {
         }
 
         frame++;
-        camera1.moveForward(speed, delta.get_ticks());
+        camera1.moveForward(speed*boost, delta.get_ticks());
+        camera2.at.x = camera1.at.x;
+        camera2.at.y = camera1.at.y + 100;
+        camera2.at.z = camera1.at.z;
+        camera2.to.x = camera1.at.x + camera1.n.x;
+        camera2.to.y = camera1.at.y + camera1.n.y;
+        camera2.to.z = camera1.at.z + camera1.n.z;
 
-        // collision detection: if the plane is too slow simply dont let it go through the floor
-        // else it will EXPLODE!!!11!1!11one
-        if (camera1.at.y < sector1.getYFromImage(camera1.at.x, camera1.at.z)) {
-            if (speed < 0.03f) {
-                camera1.at.y += 1;
-                camera1.to.y += 1;
-            } else {
-                explosion(camera1.at.x, camera1.at.y, camera1.at.z, __time.get_ticks()); 
-            }
-        }
+        plane_camera1.at.x = camera1.at.x - 10;
+        plane_camera1.at.y = camera1.at.y + 10;
+        plane_camera1.at.z = camera1.at.z - 10;
+        plane_camera1.to.x = camera1.at.x + camera1.n.x;
+        plane_camera1.to.y = camera1.at.y + camera1.n.y;
+        plane_camera1.to.z = camera1.at.z + camera1.n.z;
 
+        plane_camera2.at.x = camera1.at.x - 3;
+        plane_camera2.at.y = camera1.at.y;
+        plane_camera2.at.z = camera1.at.z - 3;
+        plane_camera2.to.x = camera1.at.x + camera1.n.x;
+        plane_camera2.to.y = camera1.at.y + camera1.n.y;
+        plane_camera2.to.z = camera1.at.z + camera1.n.z;
+        
+        plane_camera3.at.x = camera1.at.x + 5;
+        plane_camera3.at.y = camera1.at.y + 5;
+        plane_camera3.at.z = camera1.at.z + 5;
+        plane_camera3.to.x = camera1.at.x + camera1.n.x;
+        plane_camera3.to.y = camera1.at.y + camera1.n.y;
+        plane_camera3.to.z = camera1.at.z + camera1.n.z;
+
+        plane_camera4.at.x = camera1.at.x;
+        plane_camera4.at.y = camera1.at.y;
+        plane_camera4.at.z = camera1.at.z;
+        plane_camera4.to.x = camera1.at.x + camera1.n.x;
+        plane_camera4.to.y = camera1.at.y + camera1.n.y;
+        plane_camera4.to.z = camera1.at.z + camera1.n.z;
+
+        detectCollision();
         if (isActive) drawGLScene();
         delta.start();
         //if (__time.get_ticks() < 1000 / MAXFPS) SDL_Delay((1000/MAXFPS) - __time.get_ticks());
